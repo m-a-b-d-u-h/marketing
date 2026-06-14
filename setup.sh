@@ -34,7 +34,7 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 echo "[5/6] Starting app with PM2..."
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 pm2 save
 
 echo "[6/6] Enabling PM2 on boot..."
