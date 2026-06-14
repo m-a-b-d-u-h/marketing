@@ -16,8 +16,9 @@ app.set("views", join(__dirname, "views"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve generated videos
+// Serve generated videos and music
 app.use("/videos", express.static(join(__dirname, "output")));
+app.use("/music", express.static(join(__dirname, "music")));
 
 const TYPES = ["stat", "steps", "compare", "mythfact", "quote", "QnA", "question", "story", "tips"];
 
