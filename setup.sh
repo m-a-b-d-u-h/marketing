@@ -5,11 +5,8 @@ REPO="https://github.com/m-a-b-d-u-h/marketing.git"
 APP_DIR="$HOME/marketing"
 ENV_FILE="$APP_DIR/.env"
 
-echo "[1/6] Installing Node.js & PM2..."
-if ! command -v node &>/dev/null; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  apt-get install -y nodejs
-fi
+echo "[1/6] Checking Node.js & installing PM2..."
+command -v node &>/dev/null || { echo "Node.js not found"; exit 1; }
 npm install -g pm2
 
 echo "[2/6] Cloning repo..."
