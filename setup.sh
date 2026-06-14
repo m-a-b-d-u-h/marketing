@@ -5,17 +5,23 @@ REPO="https://github.com/m-a-b-d-u-h/marketing.git"
 APP_DIR="$HOME/marketing"
 ENV_FILE="$APP_DIR/.env"
 
-echo "[1/6] Checking Node.js & installing PM2..."
+echo "[1/6] Checking prerequisites..."
 command -v node &>/dev/null || { echo "Node.js not found"; exit 1; }
+command -v ffmpeg &>/dev/null || { echo "ffmpeg not found, installing..."; apt-get install -y ffmpeg; }
+echo "   node $(node -v), ffmpeg $(ffmpeg -version | head -1 | awk '{print $3}')"
 npm install -g pm2
 
 echo "[2/6] Cloning repo..."
-if [ -d "$APP_DIR" ]; then
-  cd "$APP_DIR" && git pull
+if [ -d "$APP_DIR/.git" ]; then
+  git -C "$APP_DIR" pull
+elif [ -d "$APP_DIR" ]; then
+  echo ">>> $APP_DIR exists but not a git repo. Remove it and re-run."
+  exit 1
 else
   git clone "$REPO" "$APP_DIR"
-  cd "$APP_DIR"
 fi
+
+cd "$APP_DIR"
 
 echo "[3/6] Installing dependencies..."
 npm ci --omit=dev
