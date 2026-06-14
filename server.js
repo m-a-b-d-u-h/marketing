@@ -98,7 +98,7 @@ app.post("/delete", (req, res) => {
   }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, () => {
   console.log(`[server] Marketing backend on :${PORT}`);
   if (process.env.DISABLE_SCHEDULER !== "1") {
     startScheduler();
