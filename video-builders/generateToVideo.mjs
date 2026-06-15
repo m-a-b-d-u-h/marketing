@@ -42,6 +42,8 @@ export async function generateVideo({ width, height, filters, output, musicFile,
   }
 
   args.push(
+    "-threads", "1",
+    "-filter_threads", "1",
     "-t", String(DURATION),
     "-c:v", "libx264",
     "-preset", "medium",
@@ -57,8 +59,13 @@ export async function generateVideo({ width, height, filters, output, musicFile,
 
   return new Promise((resolve, reject) => {
     const ff = spawn("ffmpeg", args);
+    const timer = setTimeout(() => {
+      ff.kill("SIGKILL");
+      reject(new Error(`ffmpeg timed out for ${output}`));
+    }, 300_000);
     ff.stderr.on("data", (d) => process.stderr.write(d));
     ff.on("close", (code) => {
+      clearTimeout(timer);
       if (code === 0) {
         console.log(`Done: ${output}`);
         resolve();
@@ -66,7 +73,10 @@ export async function generateVideo({ width, height, filters, output, musicFile,
         reject(new Error(`ffmpeg exited with code ${code}`));
       }
     });
-    ff.on("error", reject);
+    ff.on("error", (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
   });
 }
 

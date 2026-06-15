@@ -1,6 +1,7 @@
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { mkdirSync, existsSync } from "fs";
+import pLimit from "p-limit";
 
 import { generateVideo as renderVideo } from "../video-builders/generateToVideo.mjs";
 import { buildStatFilters } from "../video-builders/statPost.mjs";
@@ -12,6 +13,8 @@ import { buildQnaFilters } from "../video-builders/qnaPost.mjs";
 import { buildQuestionFilters } from "../video-builders/questionPost.mjs";
 import { buildStoryFilters } from "../video-builders/storyPost.mjs";
 import { buildTipsFilters } from "../video-builders/tipsPost.mjs";
+
+const limit = pLimit(Number(process.env.RENDER_CONCURRENCY || 1));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, "..", "output");
@@ -41,7 +44,7 @@ export async function generateVideo(postType, content) {
   const outFile = `${postType}-${timestamp}.mp4`;
   const outPath = join(OUT_DIR, outFile);
 
-  await renderVideo({ width, height, filters, output: outPath, softsell: SOFTSELL });
+  await limit(() => renderVideo({ width, height, filters, output: outPath, softsell: SOFTSELL }));
 
   return outPath;
 }
