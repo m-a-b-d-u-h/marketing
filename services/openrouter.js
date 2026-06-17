@@ -15,7 +15,7 @@ ${JSON.stringify(content, null, 2)}`;
   return caption.trim() + " #1section";
 }
 
-async function askAI(prompt) {
+async function askAI(prompt, retries = 3) {
   const key = process.env.OPENROUTER_KEY;
   if (!key) throw new Error("OPENROUTER_KEY not set");
 
@@ -46,6 +46,13 @@ async function askAI(prompt) {
     const content = data.choices?.[0]?.message?.content;
     if (!content) throw new Error(`OpenRouter returned empty response: ${JSON.stringify(data)}`);
     return content;
+  } catch (e) {
+    if (retries > 0 && (e.cause?.code === "EAI_AGAIN" || e.code === "EAI_AGAIN" || e.type === "system" || e.message?.includes("fetch failed"))) {
+      console.log(`OpenRouter DNS/network error, retrying... (${retries} left)`);
+      await new Promise(r => setTimeout(r, 2000));
+      return askAI(prompt, retries - 1);
+    }
+    throw e;
   } finally {
     clearTimeout(timeout);
   }
