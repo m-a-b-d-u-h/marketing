@@ -62,7 +62,7 @@ export async function generateVideo({ width, height, filters, output, musicFile,
     const timer = setTimeout(() => {
       ff.kill("SIGKILL");
       reject(new Error(`ffmpeg timed out for ${output}`));
-    }, 300_000);
+    }, 1_800_000);
     ff.stderr.on("data", (d) => process.stderr.write(d));
     ff.on("close", (code) => {
       clearTimeout(timer);
