@@ -52,7 +52,8 @@ export async function runPipeline({ postType } = {}) {
     for (const ch of channels) {
       try {
         const videoTitle = content.title || content.label || "1section";
-        await createPost(token, ch.id, caption, videoUrl, ch.service, videoTitle);
+        const thumbnailOffset = (ch.service === "youtube" || ch.service === "tiktok") ? 0 : undefined;
+        await createPost(token, ch.id, caption, videoUrl, ch.service, videoTitle, thumbnailOffset);
         results.push({ channel: ch.name, ok: true });
         console.log(`[pipeline] Posted to ${ch.name} (${ch.service})`);
       } catch (err) {

@@ -1,42 +1,40 @@
 const BASE = "https://api.buffer.com";
 
 export async function getChannels(token) {
-  const query = `query GetChannels {
-    account {
-      organizations {
-        id
-        channels {
-          id
-          name
-          service
-        }
-      }
+  const orgQuery = `query { account { organizations { id } } }`;
+  const orgData = await graphql(token, orgQuery);
+  const orgs = orgData.account?.organizations ?? [];
+  if (!orgs.length) return { organizations: [], channels: [] };
+
+  const chQuery = `query ($orgId: OrganizationId!) {
+    channels(input: { organizationId: $orgId }) {
+      id name service
     }
   }`;
-
-  const data = await graphql(token, query);
-  const orgs = data.account?.organizations ?? [];
-  const channels = orgs.flatMap((o) => o.channels ?? []);
+  const chData = await graphql(token, chQuery, { orgId: orgs[0].id });
+  const channels = chData.channels ?? [];
   return { organizations: orgs, channels };
 }
 
-export async function createPost(token, channelId, text, videoUrl, service, videoTitle) {
-  const assets = videoUrl
-    ? `assets: [{ video: { url: "${videoUrl}" } }]`
-    : "";
+export async function createPost(token, channelId, text, videoUrl, service, videoTitle, thumbnailOffset) {
+  const videoAsset = { url: videoUrl };
+  if (thumbnailOffset != null) {
+    videoAsset.metadata = { thumbnailOffset };
+  }
+
+  const input = {
+    text,
+    channelId,
+    schedulingType: "automatic",
+    mode: "shareNow",
+    assets: videoUrl ? [{ video: videoAsset }] : [],
+  };
 
   const metadata = buildMetadata(service, videoUrl, videoTitle);
-  const metaField = metadata ? `metadata: ${metadata}` : "";
+  if (metadata) input.metadata = metadata;
 
-  const mutation = `mutation CreatePost {
-    createPost(input: {
-      text: ${JSON.stringify(text)}
-      channelId: "${channelId}"
-      schedulingType: automatic
-      mode: shareNow
-      ${metaField}
-      ${assets}
-    }) {
+  const query = `mutation CreatePost($input: CreatePostInput!) {
+    createPost(input: $input) {
       ... on PostActionSuccess {
         post { id text dueAt }
       }
@@ -44,16 +42,15 @@ export async function createPost(token, channelId, text, videoUrl, service, vide
     }
   }`;
 
-  return graphql(token, mutation);
+  return graphql(token, query, { input });
 }
 
 function buildMetadata(service, videoUrl, videoTitle) {
   switch (service) {
     case "instagram":
-      return `{ instagram: { type: post, shouldShareToFeed: true } }`;
+      return { instagram: { type: "post", shouldShareToFeed: true } };
     case "youtube":
-      const title = videoTitle ? JSON.stringify(videoTitle) : '"1section"';
-      return `{ youtube: { title: ${title}, privacy: public, categoryId: "24" } }`;
+      return { youtube: { title: videoTitle || "1section", privacy: "public", categoryId: "24" } };
     case "twitter":
       return null;
     default:
@@ -61,14 +58,14 @@ function buildMetadata(service, videoUrl, videoTitle) {
   }
 }
 
-async function graphql(token, query) {
+async function graphql(token, query, variables = {}) {
   const res = await fetch(BASE, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, variables }),
   });
 
   if (!res.ok) {
